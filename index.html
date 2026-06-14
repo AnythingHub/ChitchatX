@@ -42,8 +42,6 @@
   .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 4px; }
   .messages::-webkit-scrollbar { width: 4px; }
   .messages::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-
-  /* Message rows */
   .msg-row { display: flex; align-items: flex-end; gap: 8px; position: relative; padding: 2px 0; }
   .msg-row.me { flex-direction: row-reverse; }
   .msg-wrap { display: flex; flex-direction: column; max-width: 65%; position: relative; }
@@ -54,8 +52,17 @@
   .bubble.deleted { background: #1e1e1e !important; color: #555; font-style: italic; border: 1px dashed #333; cursor: default; }
   .bubble.edited-bubble::after { content: " (edited)"; font-size: 10px; color: #aaa8; }
   .msg-sender { font-size: 11px; color: #888; margin-bottom: 3px; }
-  .msg-time { font-size: 10px; color: #555; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
-  .msg-row.me .msg-time { justify-content: flex-end; }
+
+  /* Message time + tick row */
+  .msg-meta { display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+  .msg-row.me .msg-meta { justify-content: flex-end; }
+  .msg-row.them .msg-meta { justify-content: flex-start; }
+  .msg-time-txt { font-size: 10px; color: #555; }
+  .tick { font-size: 13px; line-height: 1; display: inline-flex; align-items: center; }
+  .tick.clock { color: #666; font-size: 11px; }
+  .tick.sent { color: #888; }
+  .tick.delivered { color: #888; }
+  .tick.seen { color: #60a5fa; }
 
   /* Context menu */
   .ctx-menu { position: fixed; background: #222; border: 1px solid #333; border-radius: 12px; padding: 6px; z-index: 999; min-width: 180px; box-shadow: 0 8px 32px #0008; animation: fadeIn 0.12s ease; }
@@ -65,11 +72,8 @@
   .ctx-item.danger { color: #f87171; }
   .ctx-item.danger:hover { background: #f8717122; }
   .ctx-icon { font-size: 16px; width: 20px; text-align: center; }
-
-  /* Edit bar */
   .edit-bar { background: #1e1a2e; border-top: 2px solid #7c3aed; padding: 8px 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #a78bfa; }
   .edit-bar-cancel { background: none; border: none; color: #888; cursor: pointer; font-size: 18px; margin-left: auto; }
-
   .input-area { padding: 14px 20px; border-top: 1px solid #2a2a2a; background: #1a1a1a; display: flex; gap: 10px; align-items: center; }
   .input-box { flex: 1; background: #2a2a2a; border: 1px solid #333; border-radius: 24px; padding: 10px 18px; color: #fff; font-size: 14px; outline: none; font-family: inherit; resize: none; max-height: 100px; transition: border-color 0.2s; }
   .input-box:focus { border-color: #7c3aed; }
@@ -149,11 +153,11 @@
   </div>
 </div>
 
-<!-- Delete Confirm Modal -->
+<!-- Delete Modal -->
 <div class="modal-overlay" id="deleteModal" style="display:none">
   <div class="modal">
     <h3>🗑️ Delete Message</h3>
-    <p style="color:#aaa;font-size:14px;margin-bottom:8px">How do you want to delete this message?</p>
+    <p style="color:#aaa;font-size:14px;margin-bottom:8px">How do you want to delete?</p>
     <div class="modal-btns" style="flex-direction:column;gap:8px">
       <button class="btn-danger" onclick="confirmDelete('everyone')" style="padding:12px">🌐 Delete for Everyone</button>
       <button class="btn-confirm" onclick="confirmDelete('me')" style="background:#333;padding:12px">🙈 Delete for Me Only</button>
@@ -164,8 +168,8 @@
 
 <!-- Context Menu -->
 <div class="ctx-menu" id="ctxMenu" style="display:none">
-  <div class="ctx-item" id="ctxEdit" onclick="ctxAction('edit')"><span class="ctx-icon">✏️</span> Edit Message</div>
-  <div class="ctx-item danger" id="ctxDelete" onclick="ctxAction('delete')"><span class="ctx-icon">🗑️</span> Delete Message</div>
+  <div class="ctx-item" onclick="ctxAction('edit')"><span class="ctx-icon">✏️</span> Edit Message</div>
+  <div class="ctx-item danger" onclick="ctxAction('delete')"><span class="ctx-icon">🗑️</span> Delete Message</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -176,6 +180,20 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let me = null, myProfile = null, activeConvoId = null, msgSub = null, isSignUp = false;
 let ctxMsgId = null, ctxMsgText = null, editingMsgId = null;
+
+// ---- TICK HELPER ----
+function tickIcon(msg, isMe) {
+  if (!isMe) return '';
+  const status = msg.status || 'sending';
+  const seenBy = msg.seen_by || [];
+  const isSeen = seenBy.length > 0;
+
+  if (status === 'sending') return `<span class="tick clock" title="Sending">🕐</span>`;
+  if (status === 'sent') return `<span class="tick sent" title="Sent">✓</span>`;
+  if (status === 'delivered' && !isSeen) return `<span class="tick delivered" title="Delivered">✓✓</span>`;
+  if (isSeen) return `<span class="tick seen" title="Seen">✓✓</span>`;
+  return `<span class="tick sent">✓</span>`;
+}
 
 // ---- AUTH ----
 window.toggleAuth = () => {
@@ -262,6 +280,7 @@ window.openConvo = async (convoId, otherName) => {
   activeConvoId = convoId;
   editingMsgId = null;
   if (msgSub) sb.removeChannel(msgSub);
+
   document.getElementById("chatArea").innerHTML = `
     <div class="chat-header">
       <div style="width:34px;height:34px;border-radius:50%;background:#2a2a2a;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">${otherName.slice(0,2).toUpperCase()}</div>
@@ -276,74 +295,98 @@ window.openConvo = async (convoId, otherName) => {
       <textarea class="input-box" id="msgInput" placeholder="Message ${escHtml(otherName)}…" rows="1" onkeydown="handleKey(event)"></textarea>
       <button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>
     </div>`;
+
   const inp = document.getElementById("msgInput");
   inp.addEventListener("input", () => { inp.style.height="auto"; inp.style.height=Math.min(inp.scrollHeight,100)+"px"; });
   inp.focus();
+
+  // mark messages as seen when opening chat
+  await markSeen(convoId);
   await fetchMessages(convoId);
+
   msgSub = sb.channel('msgs-'+convoId)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convoId}` }, () => fetchMessages(convoId))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${convoId}` }, async () => {
+      await markSeen(convoId);
+      await fetchMessages(convoId);
+    })
     .subscribe();
+
   loadConversations();
 };
 
-// ---- FETCH & RENDER MESSAGES ----
+// ---- MARK SEEN ----
+async function markSeen(convoId) {
+  // get all messages not sent by me and not yet seen by me
+  const { data: msgs } = await sb.from("messages")
+    .select("id, seen_by")
+    .eq("conversation_id", convoId)
+    .neq("user_id", me.id);
+
+  if (!msgs) return;
+  for (const msg of msgs) {
+    const seen = msg.seen_by || [];
+    if (!seen.includes(me.id)) {
+      seen.push(me.id);
+      await sb.from("messages").update({ seen_by: seen }).eq("id", msg.id);
+    }
+  }
+}
+
+// ---- FETCH MESSAGES ----
 async function fetchMessages(convoId) {
   const { data: msgs } = await sb.from("messages").select("*").eq("conversation_id", convoId).order("created_at", { ascending: true });
   const list = document.getElementById("msgList");
   if (!list) return;
+  const wasAtBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 60;
 
   list.innerHTML = (msgs||[]).map(m => {
     const isMe = m.user_id === me.id;
     const t = new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const deletedForMe = m.deleted_for && m.deleted_for.includes(me.id);
+    const deletedForMe = (m.deleted_for||[]).includes(me.id);
     const deletedForAll = m.deleted_for_everyone;
 
     if (deletedForMe || deletedForAll) {
       return `<div class="msg-row ${isMe?'me':'them'}">
         <div class="msg-wrap">
           <div class="bubble deleted">🚫 ${deletedForAll ? 'This message was deleted' : 'You deleted this message'}</div>
-          <div class="msg-time">${t}</div>
+          <div class="msg-meta"><span class="msg-time-txt">${t}</span></div>
         </div>
       </div>`;
     }
 
+    const tick = tickIcon(m, isMe);
     return `<div class="msg-row ${isMe?'me':'them'}" id="row-${m.id}">
       <div class="msg-wrap">
         ${!isMe ? `<div class="msg-sender">${escHtml(m.sender_name||'')}</div>` : ''}
-        <div class="bubble ${m.edited?'edited-bubble':''}" oncontextmenu="showCtx(event,'${m.id}','${escAttr(m.text)}',${isMe})" onclick="if(window.isMobile)showCtx(event,'${m.id}','${escAttr(m.text)}',${isMe})">${escHtml(m.text)}</div>
-        <div class="msg-time">${t}${m.edited?' · <span style="color:#666">edited</span>':''}</div>
+        <div class="bubble ${m.edited?'edited-bubble':''}" oncontextmenu="showCtx(event,'${m.id}','${escAttr(m.text)}',${isMe})">${escHtml(m.text)}</div>
+        <div class="msg-meta">
+          <span class="msg-time-txt">${t}</span>
+          ${m.edited ? `<span style="font-size:10px;color:#666">edited</span>` : ''}
+          ${tick}
+        </div>
       </div>
     </div>`;
   }).join('');
-  list.scrollTop = list.scrollHeight;
+
+  if (wasAtBottom) list.scrollTop = list.scrollHeight;
 }
 
 // ---- CONTEXT MENU ----
-window.isMobile = window.matchMedia("(pointer:coarse)").matches;
-
 window.showCtx = (e, msgId, msgText, isMe) => {
   e.preventDefault();
-  if (!isMe) return; // only own messages
-  ctxMsgId = msgId;
-  ctxMsgText = msgText;
+  if (!isMe) return;
+  ctxMsgId = msgId; ctxMsgText = msgText;
   const menu = document.getElementById("ctxMenu");
   menu.style.display = "block";
-  // position
   const x = Math.min(e.clientX, window.innerWidth - 200);
-  const y = Math.min(e.clientY, window.innerHeight - 100);
-  menu.style.left = x + "px";
-  menu.style.top = y + "px";
+  const y = Math.min(e.clientY, window.innerHeight - 110);
+  menu.style.left = x+"px"; menu.style.top = y+"px";
 };
-
-document.addEventListener("click", e => {
-  const menu = document.getElementById("ctxMenu");
-  if (!menu.contains(e.target)) menu.style.display = "none";
-});
-
+document.addEventListener("click", e => { const m = document.getElementById("ctxMenu"); if(!m.contains(e.target)) m.style.display="none"; });
 window.ctxAction = (action) => {
   document.getElementById("ctxMenu").style.display = "none";
-  if (action === "edit") startEdit(ctxMsgId, ctxMsgText);
-  if (action === "delete") openDeleteModal();
+  if (action==="edit") startEdit(ctxMsgId, ctxMsgText);
+  if (action==="delete") openDeleteModal();
 };
 
 // ---- EDIT ----
@@ -351,98 +394,110 @@ function startEdit(msgId, msgText) {
   editingMsgId = msgId;
   const inp = document.getElementById("msgInput");
   const bar = document.getElementById("editBar");
-  if (!inp || !bar) return;
-  inp.value = msgText;
-  inp.style.height = "auto";
-  inp.style.height = Math.min(inp.scrollHeight, 100) + "px";
-  inp.focus();
-  bar.style.display = "flex";
-  document.getElementById("sendBtn").textContent = "✓";
+  if (!inp||!bar) return;
+  inp.value = msgText; inp.style.height="auto"; inp.style.height=Math.min(inp.scrollHeight,100)+"px"; inp.focus();
+  bar.style.display="flex";
+  document.getElementById("sendBtn").textContent="✓";
 }
-
 window.cancelEdit = () => {
-  editingMsgId = null;
-  const inp = document.getElementById("msgInput");
-  const bar = document.getElementById("editBar");
-  if (inp) { inp.value = ""; inp.style.height = "auto"; }
-  if (bar) bar.style.display = "none";
-  const btn = document.getElementById("sendBtn");
-  if (btn) btn.textContent = "➤";
+  editingMsgId=null;
+  const inp=document.getElementById("msgInput"); const bar=document.getElementById("editBar");
+  if(inp){inp.value="";inp.style.height="auto";} if(bar) bar.style.display="none";
+  const btn=document.getElementById("sendBtn"); if(btn) btn.textContent="➤";
 };
 
 // ---- DELETE ----
-window.openDeleteModal = () => { document.getElementById("deleteModal").style.display = "flex"; };
-window.closeDeleteModal = () => { document.getElementById("deleteModal").style.display = "none"; };
-
+window.openDeleteModal = () => { document.getElementById("deleteModal").style.display="flex"; };
+window.closeDeleteModal = () => { document.getElementById("deleteModal").style.display="none"; };
 window.confirmDelete = async (scope) => {
   closeDeleteModal();
   if (!ctxMsgId) return;
-  if (scope === "everyone") {
-    await sb.from("messages").update({ deleted_for_everyone: true, text: "deleted" }).eq("id", ctxMsgId);
+  if (scope==="everyone") {
+    await sb.from("messages").update({ deleted_for_everyone:true, text:"deleted" }).eq("id", ctxMsgId);
   } else {
-    // get existing deleted_for array and add current user
     const { data: msg } = await sb.from("messages").select("deleted_for").eq("id", ctxMsgId).single();
-    const arr = msg?.deleted_for || [];
+    const arr = msg?.deleted_for||[];
     if (!arr.includes(me.id)) arr.push(me.id);
-    await sb.from("messages").update({ deleted_for: arr }).eq("id", ctxMsgId);
+    await sb.from("messages").update({ deleted_for:arr }).eq("id", ctxMsgId);
   }
   await fetchMessages(activeConvoId);
   loadConversations();
 };
 
-// ---- SEND / EDIT ----
+// ---- SEND ----
 window.handleKey = e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();} };
-
 window.sendMsg = async () => {
   const inp = document.getElementById("msgInput");
   const text = inp.value.trim();
-  if (!text || !activeConvoId) return;
+  if (!text||!activeConvoId) return;
 
   if (editingMsgId) {
-    await sb.from("messages").update({ text, edited: true }).eq("id", editingMsgId);
+    await sb.from("messages").update({ text, edited:true }).eq("id", editingMsgId);
     cancelEdit();
     await fetchMessages(activeConvoId);
     return;
   }
 
-  inp.value = ""; inp.style.height = "auto";
-  await sb.from("messages").insert({
+  inp.value=""; inp.style.height="auto";
+
+  // optimistic: show with clock immediately
+  const tempId = "temp-"+Date.now();
+  const list = document.getElementById("msgList");
+  if (list) {
+    const t = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const div = document.createElement("div");
+    div.className = "msg-row me"; div.id = tempId;
+    div.innerHTML = `<div class="msg-wrap" style="align-items:flex-end">
+      <div class="bubble">${escHtml(text)}</div>
+      <div class="msg-meta" style="justify-content:flex-end"><span class="msg-time-txt">${t}</span><span class="tick clock">🕐</span></div>
+    </div>`;
+    list.appendChild(div);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  const { error } = await sb.from("messages").insert({
     conversation_id: activeConvoId, user_id: me.id,
-    sender_name: myProfile?.name || me.email, text
+    sender_name: myProfile?.name || me.email,
+    text, status: 'delivered', seen_by: []
   });
+
+  // remove optimistic bubble (real one comes via subscription)
+  const tmp = document.getElementById(tempId);
+  if (tmp) tmp.remove();
+
+  if (!error) loadConversations();
 };
 
 // ---- NEW CHAT ----
 window.openModal = () => {
-  document.getElementById("newChatModal").style.display = "flex";
-  document.getElementById("friendEmail").value = "";
-  document.getElementById("modalError").textContent = "";
-  setTimeout(() => document.getElementById("friendEmail").focus(), 100);
+  document.getElementById("newChatModal").style.display="flex";
+  document.getElementById("friendEmail").value="";
+  document.getElementById("modalError").textContent="";
+  setTimeout(()=>document.getElementById("friendEmail").focus(),100);
 };
-window.closeModal = () => { document.getElementById("newChatModal").style.display = "none"; };
-
+window.closeModal = () => { document.getElementById("newChatModal").style.display="none"; };
 window.startChat = async () => {
   const email = document.getElementById("friendEmail").value.trim().toLowerCase();
   const errEl = document.getElementById("modalError");
-  errEl.textContent = "";
-  if (!email) { errEl.textContent = "Please enter an email."; return; }
-  if (email === me.email.toLowerCase()) { errEl.textContent = "That's your own email!"; return; }
+  errEl.textContent="";
+  if (!email) { errEl.textContent="Please enter an email."; return; }
+  if (email===me.email.toLowerCase()) { errEl.textContent="That's your own email!"; return; }
   const { data: friend } = await sb.from("users").select("*").eq("email", email).single();
-  if (!friend) { errEl.textContent = "No user found! They need to sign up first."; return; }
+  if (!friend) { errEl.textContent="No user found! They need to sign up first."; return; }
   const { data: myC } = await sb.from("conversation_members").select("conversation_id").eq("user_id", me.id);
   const { data: theirC } = await sb.from("conversation_members").select("conversation_id").eq("user_id", friend.id);
-  const myIds = (myC||[]).map(x=>x.conversation_id);
-  const theirIds = (theirC||[]).map(x=>x.conversation_id);
-  const common = myIds.find(id => theirIds.includes(id));
+  const myIds=(myC||[]).map(x=>x.conversation_id);
+  const theirIds=(theirC||[]).map(x=>x.conversation_id);
+  const common=myIds.find(id=>theirIds.includes(id));
   if (common) { closeModal(); openConvo(common, friend.name); return; }
   const { data: convo } = await sb.from("conversations").insert({}).select().single();
-  await sb.from("conversation_members").insert([{ conversation_id: convo.id, user_id: me.id }, { conversation_id: convo.id, user_id: friend.id }]);
+  await sb.from("conversation_members").insert([{conversation_id:convo.id,user_id:me.id},{conversation_id:convo.id,user_id:friend.id}]);
   closeModal();
   openConvo(convo.id, friend.name);
 };
 
-function escHtml(t) { return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"); }
-function escAttr(t) { return String(t).replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
+function escHtml(t){return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");}
+function escAttr(t){return String(t).replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;");}
 </script>
 </body>
 </html>

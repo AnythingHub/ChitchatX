@@ -229,6 +229,7 @@ window.doAuth = async () => {
 
 window.doLogout = async () => {
   if (msgSub) sb.removeChannel(msgSub);
+  if (window._pollTimer) clearInterval(window._pollTimer);
   await sb.auth.signOut();
   me = null; myProfile = null; activeConvoId = null;
   document.getElementById("authScreen").style.display = "flex";
@@ -280,6 +281,7 @@ window.openConvo = async (convoId, otherName) => {
   activeConvoId = convoId;
   editingMsgId = null;
   if (msgSub) sb.removeChannel(msgSub);
+  if (window._pollTimer) clearInterval(window._pollTimer);
 
   document.getElementById("chatArea").innerHTML = `
     <div class="chat-header">
@@ -310,6 +312,15 @@ window.openConvo = async (convoId, otherName) => {
       await fetchMessages(convoId);
     })
     .subscribe();
+
+  // polling fallback every 2s in case websocket fails
+  if (window._pollTimer) clearInterval(window._pollTimer);
+  window._pollTimer = setInterval(async () => {
+    if (activeConvoId) {
+      await markSeen(activeConvoId);
+      await fetchMessages(activeConvoId);
+    }
+  }, 2000);
 
   loadConversations();
 };

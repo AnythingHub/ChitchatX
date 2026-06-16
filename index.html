@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
+<!-- saved from url=(0109)file:///C:/Users/HOME/Documents/Codex/2026-06-16/files-mentioned-by-the-user-chat/outputs/chat-corrected.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ChatApp</title>
 <style>
@@ -134,18 +134,18 @@
 <body>
 
 <!-- AUTH SCREEN -->
-<div id="authScreen">
+<div id="authScreen" style="display: none;">
   <div class="auth-box">
     <h1>💬 ChatApp</h1>
     <p id="authSub">Sign in to chat with friends</p>
     <input class="auth-input" id="authName" type="text" placeholder="Your display name" style="display:none" autocomplete="name">
     <input class="auth-input" id="authEmail" type="email" placeholder="Email address" autocomplete="email">
-    <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuth()">
+    <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key===&#39;Enter&#39;)doAuth()">
     <button class="btn-purple" onclick="doAuth()" id="authBtn">Sign In</button>
     <div class="auth-error" id="authError"></div>
     <div class="divider"><div></div><span>or continue with</span><div></div></div>
     <button class="btn-fb" onclick="signInFB()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path></svg>
       Continue with Facebook
     </button>
     <div class="auth-toggle" id="authToggle" style="margin-top:16px">Don't have an account? <span onclick="toggleMode()">Sign Up</span></div>
@@ -153,21 +153,19 @@
 </div>
 
 <!-- APP SCREEN -->
-<div id="appScreen">
+<div id="appScreen" style="display: flex;">
   <div class="app">
     <div class="sidebar">
       <div class="sidebar-header">
-        <div class="my-avatar" id="myAvatar">?</div>
-        <div class="my-name" id="myName"></div>
+        <div class="my-avatar" id="myAvatar">AN</div>
+        <div class="my-name" id="myName">Ankit 2</div>
         <button class="mob-new" onclick="openNewChat()">+</button>
         <button class="logout-btn" onclick="doLogout()">🚪</button>
       </div>
       <div class="new-chat-btn" onclick="openNewChat()">+ New Conversation</div>
-      <div class="contacts" id="contactList"><div style="padding:20px;text-align:center;color:#555;font-size:13px">No conversations yet</div></div>
+      <div class="contacts" id="contactList"><div class="contact active" onclick="openConvo(&quot;60812d82-ee40-495a-aa11-563a1038dded&quot;,&quot;Ankit&quot;)"><div class="c-avatar">AN</div><div class="c-info"><div class="c-name">Ankit</div><div class="c-preview">yeah</div></div></div></div>
     </div>
-    <div class="chat-area" id="chatArea">
-      <div class="empty-chat"><div class="icon">💬</div><p>Pick a conversation</p><p style="font-size:13px;color:#555">or start a new one</p></div>
-    </div>
+    <div class="chat-area" id="chatArea"><div class="chat-header"><div class="c-avatar" style="width:34px;height:34px;font-size:13px">AN</div><span style="font-size:15px;font-weight:600;margin-left:4px">Ankit</span><div style="margin-left:auto;display:flex;gap:6px"><button class="call-btn" onclick="startCall(&#39;voice&#39;,&quot;60812d82-ee40-495a-aa11-563a1038dded&quot;)" title="Voice Call">📞</button><button class="call-btn" onclick="startCall(&#39;video&#39;,&quot;60812d82-ee40-495a-aa11-563a1038dded&quot;)" title="Video Call">📹</button></div></div><div class="messages" id="msgList"><div class="msg-row me" id="r-4d7ae3ac-0cb2-4525-94e7-8e87ff4da945"><div class="msg-wrap"><div class="bubble" oncontextmenu="showCtx(event,&quot;4d7ae3ac-0cb2-4525-94e7-8e87ff4da945&quot;,&quot;Hi&quot;,true)" onclick="if(window._mob)showCtx(event,&quot;4d7ae3ac-0cb2-4525-94e7-8e87ff4da945&quot;,&quot;Hi&quot;,true)">Hi</div><div class="msg-meta"><span class="msg-time-txt">02:36 PM</span><span class="tick clock">🕐</span></div></div></div><div class="msg-row me" id="r-17c8ecf9-3191-4ada-9d57-9349d2fb03a7"><div class="msg-wrap"><div class="bubble" oncontextmenu="showCtx(event,&quot;17c8ecf9-3191-4ada-9d57-9349d2fb03a7&quot;,&quot;Hi&quot;,true)" onclick="if(window._mob)showCtx(event,&quot;17c8ecf9-3191-4ada-9d57-9349d2fb03a7&quot;,&quot;Hi&quot;,true)">Hi</div><div class="msg-meta"><span class="msg-time-txt">02:36 PM</span><span class="tick clock">🕐</span></div></div></div><div class="msg-row me" id="r-3c511d26-d898-4638-a0b7-985fb6529ade"><div class="msg-wrap"><div class="bubble" oncontextmenu="showCtx(event,&quot;3c511d26-d898-4638-a0b7-985fb6529ade&quot;,&quot;Ho&quot;,true)" onclick="if(window._mob)showCtx(event,&quot;3c511d26-d898-4638-a0b7-985fb6529ade&quot;,&quot;Ho&quot;,true)">Ho</div><div class="msg-meta"><span class="msg-time-txt">02:36 PM</span><span class="tick clock">🕐</span></div></div></div><div class="msg-row them" id="r-9b6b59ee-e425-412c-be73-e6c1d557dc63"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;9b6b59ee-e425-412c-be73-e6c1d557dc63&quot;,&quot;hi&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;9b6b59ee-e425-412c-be73-e6c1d557dc63&quot;,&quot;hi&quot;,false)">hi</div><div class="msg-meta"><span class="msg-time-txt">05:27 PM</span></div></div></div><div class="msg-row them" id="r-6905e360-4014-43ed-abd5-68d61d5d86a6"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;6905e360-4014-43ed-abd5-68d61d5d86a6&quot;,&quot;hey&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;6905e360-4014-43ed-abd5-68d61d5d86a6&quot;,&quot;hey&quot;,false)">hey</div><div class="msg-meta"><span class="msg-time-txt">05:30 PM</span></div></div></div><div class="msg-row them" id="r-f6eadccb-b92d-4046-a1fc-c504c9e23fe5"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;f6eadccb-b92d-4046-a1fc-c504c9e23fe5&quot;,&quot;going good&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;f6eadccb-b92d-4046-a1fc-c504c9e23fe5&quot;,&quot;going good&quot;,false)">going good</div><div class="msg-meta"><span class="msg-time-txt">05:39 PM</span></div></div></div><div class="msg-row them" id="r-a79090f1-34a2-46ba-bd68-54f6b3d0e741"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;a79090f1-34a2-46ba-bd68-54f6b3d0e741&quot;,&quot;yo&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;a79090f1-34a2-46ba-bd68-54f6b3d0e741&quot;,&quot;yo&quot;,false)">yo</div><div class="msg-meta"><span class="msg-time-txt">05:43 PM</span></div></div></div><div class="msg-row them" id="r-ba0ea5ac-9a75-47dc-a81f-bcedaf8ff319"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;ba0ea5ac-9a75-47dc-a81f-bcedaf8ff319&quot;,&quot;yo&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;ba0ea5ac-9a75-47dc-a81f-bcedaf8ff319&quot;,&quot;yo&quot;,false)">yo</div><div class="msg-meta"><span class="msg-time-txt">05:43 PM</span></div></div></div><div class="msg-row them" id="r-17bd2fbd-449d-4a5b-83b8-d1eab1d0eaba"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;17bd2fbd-449d-4a5b-83b8-d1eab1d0eaba&quot;,&quot;hi&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;17bd2fbd-449d-4a5b-83b8-d1eab1d0eaba&quot;,&quot;hi&quot;,false)">hi</div><div class="msg-meta"><span class="msg-time-txt">05:43 PM</span></div></div></div><div class="msg-row them" id="r-6ac20233-75ef-4727-939a-a709c6f11d7e"><div class="msg-wrap"><div class="msg-sender">Ankit</div><div class="bubble" oncontextmenu="showCtx(event,&quot;6ac20233-75ef-4727-939a-a709c6f11d7e&quot;,&quot;hi&quot;,false)" onclick="if(window._mob)showCtx(event,&quot;6ac20233-75ef-4727-939a-a709c6f11d7e&quot;,&quot;hi&quot;,false)">hi</div><div class="msg-meta"><span class="msg-time-txt">05:44 PM</span></div></div></div><div class="msg-row me" id="r-b3071dd9-c724-41c7-ba3a-5f80d60742a3"><div class="msg-wrap"><div class="bubble" oncontextmenu="showCtx(event,&quot;b3071dd9-c724-41c7-ba3a-5f80d60742a3&quot;,&quot;yeah&quot;,true)" onclick="if(window._mob)showCtx(event,&quot;b3071dd9-c724-41c7-ba3a-5f80d60742a3&quot;,&quot;yeah&quot;,true)">yeah</div><div class="msg-meta"><span class="msg-time-txt">06:47 PM</span><span class="tick blue">✓✓</span></div></div></div></div><div id="editBar" style="display:none" class="edit-bar"><span>✏️ Editing message</span><button class="edit-bar-cancel" onclick="cancelEdit()">✕</button></div><div class="input-area"><textarea class="input-box" id="msgInput" placeholder="Message Ankit..." rows="1" onkeydown="handleKey(event)"></textarea><button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button></div></div>
   </div>
 </div>
 
@@ -176,8 +174,8 @@
   <div class="call-avatar-big" id="callAv">?</div>
   <div class="call-title" id="callTitle">Calling...</div>
   <div class="call-status" id="callSt">Connecting...</div>
-  <video id="remoteVideo" autoplay playsinline></video>
-  <video id="localVideo" autoplay playsinline muted></video>
+  <video id="remoteVideo" autoplay="" playsinline=""></video>
+  <video id="localVideo" autoplay="" playsinline="" muted=""></video>
   <div class="call-controls">
     <button class="ccbtn mute" id="muteBtn" onclick="toggleMute()">🎤</button>
     <button class="ccbtn end" onclick="endCall()">📵</button>
@@ -199,7 +197,7 @@
 <div class="modal-overlay" id="newChatModal" style="display:none">
   <div class="modal">
     <h3>💬 New Conversation</h3>
-    <input class="auth-input" id="friendEmail" type="email" placeholder="Friend's email address" onkeydown="if(event.key==='Enter')startChat()">
+    <input class="auth-input" id="friendEmail" type="email" placeholder="Friend&#39;s email address" onkeydown="if(event.key===&#39;Enter&#39;)startChat()">
     <div class="modal-error" id="modalErr"></div>
     <div class="modal-btns">
       <button class="btn-cancel2" onclick="closeNewChat()">Cancel</button>
@@ -214,8 +212,8 @@
     <h3>🗑️ Delete Message</h3>
     <p style="color:#aaa;font-size:14px;margin-bottom:4px">Choose how to delete:</p>
     <div class="modal-btns" style="flex-direction:column;gap:8px">
-      <button class="btn-danger2" onclick="doDelete('all')" style="padding:12px">🌐 Delete for Everyone</button>
-      <button class="btn-confirm2" onclick="doDelete('me')" style="background:#333;padding:12px">🙈 Delete for Me Only</button>
+      <button class="btn-danger2" onclick="doDelete(&#39;all&#39;)" style="padding:12px">🌐 Delete for Everyone</button>
+      <button class="btn-confirm2" onclick="doDelete(&#39;me&#39;)" style="background:#333;padding:12px">🙈 Delete for Me Only</button>
       <button class="btn-cancel2" onclick="closeDeleteModal()" style="padding:12px">Cancel</button>
     </div>
   </div>
@@ -223,12 +221,12 @@
 
 <!-- CONTEXT MENU -->
 <div class="ctx-menu" id="ctxMenu" style="display:none">
-  <div class="ctx-item" onclick="ctxDo('edit')">✏️ &nbsp;Edit Message</div>
-  <div class="ctx-item danger" onclick="ctxDo('delete')">🗑️ &nbsp;Delete Message</div>
+  <div class="ctx-item" onclick="ctxDo(&#39;edit&#39;)">✏️ &nbsp;Edit Message</div>
+  <div class="ctx-item danger" onclick="ctxDo(&#39;delete&#39;)">🗑️ &nbsp;Delete Message</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+<script src="./ChatApp_files/supabase-js@2"></script>
+<script src="./ChatApp_files/AgoraRTC_N.js.download"></script>
 <script>
 // ── CONFIG ──────────────────────────────────────────────
 const SB_URL  = "https://mqomxdvydrnnvvkkabtz.supabase.co";
@@ -239,11 +237,11 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 
 // ── STATE ───────────────────────────────────────────────
 let me = null, myProfile = null, activeConvoId = null;
-let msgSub = null, pollTimer = null;
+let msgSub = null, callSub = null, pollTimer = null;
 let isSignUp = false;
 let ctxId = null, ctxText = null, editId = null, delId = null;
 let agoraClient = null, localAudio = null, localVideo = null;
-let isMuted = false, isCamOff = false, incData = null, callType = null;
+let isMuted = false, isCamOff = false, incData = null, callType = null, currentCallConvoId = null;
 
 // ── AUTH STATE ──────────────────────────────────────────
 sb.auth.onAuthStateChange(async (event, session) => {
@@ -270,6 +268,8 @@ sb.auth.getSession().then(({ data }) => {
 function showAuth() {
   me = null; myProfile = null; activeConvoId = null;
   if (pollTimer) clearInterval(pollTimer);
+  if (msgSub) { sb.removeChannel(msgSub); msgSub = null; }
+  if (callSub) { sb.removeChannel(callSub); callSub = null; }
   document.getElementById("authScreen").style.display = "flex";
   document.getElementById("appScreen").style.display = "none";
 }
@@ -320,6 +320,7 @@ window.signInFB = async () => {
 // ── LOGOUT ──────────────────────────────────────────────
 window.doLogout = async () => {
   if (msgSub) { sb.removeChannel(msgSub); msgSub = null; }
+  if (callSub) { sb.removeChannel(callSub); callSub = null; }
   if (pollTimer) clearInterval(pollTimer);
   await endCall(true);
   await sb.auth.signOut();
@@ -366,8 +367,8 @@ async function loadConvos() {
   }
   convos.sort((a,b) => new Date(b.lastAt||0) - new Date(a.lastAt||0));
   document.getElementById("contactList").innerHTML = convos.map(c =>
-    '<div class="contact' + (c.id===activeConvoId?' active':'') + '" onclick="openConvo(\'' + c.id + '\',\'' + ea(c.otherName) + '\')">' +
-    '<div class="c-avatar">' + c.otherName.slice(0,2).toUpperCase() + '</div>' +
+    '<div class="contact' + (c.id===activeConvoId?' active':'') + '" onclick="openConvo(' + jsArg(c.id) + ',' + jsArg(c.otherName) + ')">' +
+    '<div class="c-avatar">' + eh(initials(c.otherName)) + '</div>' +
     '<div class="c-info"><div class="c-name">' + eh(c.otherName) + '</div><div class="c-preview">' + eh(c.preview) + '</div></div></div>'
   ).join('');
 }
@@ -380,17 +381,17 @@ window.openConvo = async (cid, oname) => {
 
   document.getElementById("chatArea").innerHTML =
     '<div class="chat-header">' +
-      '<div class="c-avatar" style="width:34px;height:34px;font-size:13px">' + oname.slice(0,2).toUpperCase() + '</div>' +
+      '<div class="c-avatar" style="width:34px;height:34px;font-size:13px">' + eh(initials(oname)) + '</div>' +
       '<span style="font-size:15px;font-weight:600;margin-left:4px">' + eh(oname) + '</span>' +
       '<div style="margin-left:auto;display:flex;gap:6px">' +
-        '<button class="call-btn" onclick="startCall(\'voice\',\'' + cid + '\')" title="Voice Call">📞</button>' +
-        '<button class="call-btn" onclick="startCall(\'video\',\'' + cid + '\')" title="Video Call">📹</button>' +
+        '<button class="call-btn" onclick="startCall(\'voice\',' + jsArg(cid) + ')" title="Voice Call">📞</button>' +
+        '<button class="call-btn" onclick="startCall(\'video\',' + jsArg(cid) + ')" title="Video Call">📹</button>' +
       '</div>' +
     '</div>' +
     '<div class="messages" id="msgList"></div>' +
     '<div id="editBar" style="display:none" class="edit-bar"><span>✏️ Editing message</span><button class="edit-bar-cancel" onclick="cancelEdit()">✕</button></div>' +
     '<div class="input-area">' +
-      '<textarea class="input-box" id="msgInput" placeholder="Message ' + eh(oname) + '…" rows="1" onkeydown="handleKey(event)"></textarea>' +
+      '<textarea class="input-box" id="msgInput" placeholder="Message ' + ha(oname) + '..." rows="1" onkeydown="handleKey(event)"></textarea>' +
       '<button class="send-btn" id="sendBtn" onclick="sendMsg()">➤</button>' +
     '</div>';
 
@@ -453,10 +454,10 @@ async function fetchMsgs(cid) {
     const tick = isMe ? (m.status==='sending' ? '<span class="tick clock">🕐</span>' : seen ? '<span class="tick blue">✓✓</span>' : '<span class="tick grey">✓✓</span>') : '';
     const editedTag = m.edited ? '<span style="font-size:10px;color:#666"> edited</span>' : '';
 
-    return '<div class="msg-row ' + (isMe?'me':'them') + '" id="r-' + m.id + '">' +
+    return '<div class="msg-row ' + (isMe?'me':'them') + '" id="r-' + ha(m.id) + '">' +
       '<div class="msg-wrap">' +
         (!isMe ? '<div class="msg-sender">' + eh(m.sender_name||'') + '</div>' : '') +
-        '<div class="bubble' + (m.edited?' ':'') + '" oncontextmenu="showCtx(event,\'' + m.id + '\',\'' + ea(m.text) + '\',' + isMe + ')" onclick="if(window._mob)showCtx(event,\'' + m.id + '\',\'' + ea(m.text) + '\',' + isMe + ')">' + eh(m.text) + '</div>' +
+        '<div class="bubble' + (m.edited?' ':'') + '" oncontextmenu="showCtx(event,' + jsArg(m.id) + ',' + jsArg(m.text) + ',' + isMe + ')" onclick="if(window._mob)showCtx(event,' + jsArg(m.id) + ',' + jsArg(m.text) + ',' + isMe + ')">' + eh(m.text) + '</div>' +
         '<div class="msg-meta"><span class="msg-time-txt">' + t + '</span>' + editedTag + tick + '</div>' +
       '</div></div>';
   }).join('');
@@ -584,7 +585,8 @@ window.startChat = async () => {
 
 // ── CALLS ─────────────────────────────────────────────────
 function listenCalls() {
-  sb.channel('call-listen-'+me.id)
+  if (callSub) { sb.removeChannel(callSub); callSub = null; }
+  callSub = sb.channel('call-listen-'+me.id)
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, p => {
       const m = p.new;
       if (m.user_id === me.id) return;
@@ -600,6 +602,7 @@ function listenCalls() {
 
 window.startCall = async (type, cid) => {
   callType = type;
+  currentCallConvoId = cid;
   const ch = 'ch-' + cid;
   await sb.from("messages").insert({
     conversation_id: cid, user_id: me.id,
@@ -616,6 +619,7 @@ window.acceptCall = async () => {
   document.getElementById("incomingBanner").style.display = "none";
   if (!incData) return;
   callType = incData.call_type;
+  currentCallConvoId = incData.conversation_id;
   showCallUI(incData.sender_name, callType);
   await joinAgora(incData.call_channel, callType);
   incData = null;
@@ -667,9 +671,11 @@ window.endCall = async (remote = false) => {
   isMuted = false; isCamOff = false;
   document.getElementById("muteBtn").textContent = "🎤";
   document.getElementById("camBtn").textContent = "📷";
-  if (!remote && activeConvoId) {
+  const endedConvoId = currentCallConvoId || activeConvoId;
+  currentCallConvoId = null;
+  if (!remote && endedConvoId) {
     await sb.from("messages").insert({
-      conversation_id: activeConvoId, user_id: me.id,
+      conversation_id: endedConvoId, user_id: me.id,
       sender_name: myProfile?.name || me.email,
       text: '📵 Call ended', call_status: 'ended',
       status: 'delivered', seen_by: []
@@ -691,8 +697,11 @@ window.toggleCam = () => {
 };
 
 // ── UTILS ─────────────────────────────────────────────────
+function initials(t) { return String(t || '?').trim().slice(0, 2).toUpperCase() || '?'; }
 function eh(t) { return String(t||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>"); }
-function ea(t) { return String(t||'').replace(/\\/g,"\\\\").replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
+function ha(t) { return String(t||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function jsArg(t) { return ha(JSON.stringify(String(t ?? ""))); }
 </script>
-</body>
-</html>
+
+
+</body></html>

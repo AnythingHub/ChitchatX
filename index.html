@@ -348,8 +348,108 @@ let mrec=null,isRec=false,rchunks=[];
 let agoraClient=null,localAudio=null,localVideo=null;
 let isMuted=false,isCamOff=false,callType=null,incData=null;
 
+// ── OFFLINE CACHE (IndexedDB) ───────────────────────────────
+// Keeps a local copy of messages + conversation list so they're viewable
+// offline, and queues outgoing messages sent while offline ("outbox") so
+// they auto-send the moment connectivity returns.
+const DB_NAME="chitchatx-cache",DB_VER=1;
+let _dbp=null;
+function odb(){
+  if(_dbp) return _dbp;
+  _dbp=new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VER);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains("msgcache")) db.createObjectStore("msgcache",{keyPath:"cid"});
+      if(!db.objectStoreNames.contains("listcache")) db.createObjectStore("listcache",{keyPath:"key"});
+      if(!db.objectStoreNames.contains("outbox")) db.createObjectStore("outbox",{keyPath:"tid"});
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+  return _dbp;
+}
+async function idbPut(store,val){
+  const db=await odb();
+  return new Promise(res=>{
+    const tx=db.transaction(store,"readwrite");
+    tx.objectStore(store).put(val);
+    tx.oncomplete=()=>res();tx.onerror=()=>res();
+  });
+}
+async function idbGet(store,key){
+  const db=await odb();
+  return new Promise(res=>{
+    const tx=db.transaction(store,"readonly");
+    const r=tx.objectStore(store).get(key);
+    r.onsuccess=()=>res(r.result);r.onerror=()=>res(undefined);
+  });
+}
+async function idbAll(store){
+  const db=await odb();
+  return new Promise(res=>{
+    const tx=db.transaction(store,"readonly");
+    const r=tx.objectStore(store).getAll();
+    r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([]);
+  });
+}
+async function idbDel(store,key){
+  const db=await odb();
+  return new Promise(res=>{
+    const tx=db.transaction(store,"readwrite");
+    tx.objectStore(store).delete(key);
+    tx.oncomplete=()=>res();tx.onerror=()=>res();
+  });
+}
+const cacheMsgs=(cid,msgs)=>idbPut("msgcache",{cid,msgs,ts:Date.now()});
+const getCachedMsgs=async cid=>{const r=await idbGet("msgcache",cid);return r?r.msgs:[];};
+const cacheList=(key,items)=>idbPut("listcache",{key,items,ts:Date.now()});
+const getCachedList=async key=>{const r=await idbGet("listcache",key);return r?r.items:[];};
+const queueOutbox=item=>idbPut("outbox",item);
+const getOutbox=()=>idbAll("outbox");
+const removeOutbox=tid=>idbDel("outbox",tid);
+
+// Network status banner
+function updateNetBanner(isOnline){
+  let b=document.getElementById("netbanner");
+  if(!isOnline){
+    if(!b){
+      b=document.createElement("div");b.id="netbanner";
+      b.style.cssText="position:fixed;top:0;left:0;right:0;background:#7c3aed;color:#fff;text-align:center;font-size:12px;padding:7px 12px;z-index:2000;font-weight:600;";
+      b.textContent="📡 You're offline — showing saved messages. Anything you send now will go out once you're back online.";
+      document.body.appendChild(b);
+    }
+  }else if(b) b.remove();
+}
+
+// Push any queued outbox messages to Supabase once back online
+let flushing=false;
+async function flushOutbox(){
+  if(flushing||!navigator.onLine) return;
+  flushing=true;
+  updateNetBanner(true);
+  try{
+    const items=(await getOutbox()).sort((a,b)=>a.ts-b.ts);
+    for(const o of items){
+      try{
+        const p={user_id:ME.id,sender_name:o.draft.sender_name,text:o.draft.text,status:"delivered",seen_by:[]};
+        if(o.type==="grp") p.group_id=o.cid; else p.conversation_id=o.cid;
+        await sb.from("messages").insert(p);
+        await removeOutbox(o.tid);
+      }catch(e){ /* still offline or failed — keep in queue, will retry next time */ }
+    }
+  }finally{
+    flushing=false;
+    if(CID) await fetchMsgs(CID,CTYPE);
+    loadAll();
+  }
+}
+window.addEventListener("online",flushOutbox);
+window.addEventListener("offline",()=>updateNetBanner(false));
+
 // ── INIT ──────────────────────────────────────────────────
 (async()=>{
+  updateNetBanner(navigator.onLine);
   const {data:{session}}=await sb.auth.getSession();
   if(session?.user) await boot(session.user);
   sb.auth.onAuthStateChange(async(evt,session)=>{
@@ -366,11 +466,17 @@ let isMuted=false,isCamOff=false,callType=null,incData=null;
 
 async function boot(user){
   if(booted)return; booted=true; ME=user;
-  let {data:prof}=await sb.from("users").select("*").eq("id",user.id).single();
-  if(!prof){
-    const name=user.user_metadata?.full_name||user.user_metadata?.name||(user.email||'').split('@')[0]||'User';
-    await sb.from("users").upsert({id:user.id,email:user.email||'',name},{onConflict:'id'});
+  let prof;
+  if(navigator.onLine){
     ({data:prof}=await sb.from("users").select("*").eq("id",user.id).single());
+    if(!prof){
+      const name=user.user_metadata?.full_name||user.user_metadata?.name||(user.email||'').split('@')[0]||'User';
+      await sb.from("users").upsert({id:user.id,email:user.email||'',name},{onConflict:'id'});
+      ({data:prof}=await sb.from("users").select("*").eq("id",user.id).single());
+    }
+    if(prof) cacheList("profile-"+user.id,prof);
+  }else{
+    prof=await getCachedList("profile-"+user.id);
   }
   PROF=prof||{name:user.email,email:user.email};
   document.getElementById("authScreen").style.display="none";
@@ -380,6 +486,7 @@ async function boot(user){
   await loadAll();
   startPoll();
   listenCalls();
+  if(navigator.onLine) flushOutbox();
 }
 
 // ── AUTH ──────────────────────────────────────────────────
@@ -445,8 +552,9 @@ async function loadAll(){
 }
 
 async function loadDMs(){
+  if(!navigator.onLine){convos=await getCachedList("dms-"+ME.id);return;}
   const {data:mine}=await sb.from("conversation_members").select("conversation_id").eq("user_id",ME.id);
-  if(!mine?.length){convos=[];return;}
+  if(!mine?.length){convos=[];cacheList("dms-"+ME.id,[]);return;}
   const ids=mine.map(c=>c.conversation_id);
   const {data:mems}=await sb.from("conversation_members").select("conversation_id,user_id,users(name,email)").in("conversation_id",ids).neq("user_id",ME.id);
   const list=[];
@@ -464,11 +572,13 @@ async function loadDMs(){
   }
   list.sort((a,b)=>new Date(b.lastAt)-new Date(a.lastAt));
   convos=list;
+  cacheList("dms-"+ME.id,list);
 }
 
 async function loadGrps(){
+  if(!navigator.onLine){groups=await getCachedList("grps-"+ME.id);return;}
   const {data:mine}=await sb.from("group_members").select("group_id").eq("user_id",ME.id);
-  if(!mine?.length){groups=[];return;}
+  if(!mine?.length){groups=[];cacheList("grps-"+ME.id,[]);return;}
   const ids=mine.map(g=>g.group_id);
   const {data:gs}=await sb.from("groups").select("*").in("id",ids);
   const list=[];
@@ -480,6 +590,7 @@ async function loadGrps(){
   }
   list.sort((a,b)=>new Date(b.lastAt)-new Date(a.lastAt));
   groups=list;
+  cacheList("grps-"+ME.id,list);
 }
 
 let fq="";
@@ -559,10 +670,19 @@ function startPoll(){
 
 // ── FETCH MESSAGES ────────────────────────────────────────
 async function fetchMsgs(cid,type){
-  let q=sb.from("messages").select("*").order("created_at",{ascending:true});
-  q=type==='grp'?q.eq("group_id",cid):q.eq("conversation_id",cid).is("group_id",null);
-  const {data:msgs}=await q;
   const el=document.getElementById("msgs");if(!el)return;
+  let msgs;
+  if(navigator.onLine){
+    let q=sb.from("messages").select("*").order("created_at",{ascending:true});
+    q=type==='grp'?q.eq("group_id",cid):q.eq("conversation_id",cid).is("group_id",null);
+    const {data,error}=await q;
+    if(error||!data){ msgs=await getCachedMsgs(cid); }
+    else { msgs=data; cacheMsgs(cid,msgs); }
+  }else{
+    msgs=await getCachedMsgs(cid);
+  }
+  const outbox=(await getOutbox()).filter(o=>o.cid===cid);
+  msgs=[...msgs,...outbox.map(o=>o.draft)];
   const atBot=el.scrollHeight-el.scrollTop-el.clientHeight<100;
   el.innerHTML=(msgs||[]).map(m=>{
     const isMe=m.user_id===ME.id;
@@ -620,11 +740,22 @@ window.sendMsg=async()=>{
   const inp=document.getElementById("minp");
   const text=inp.value.trim();if(!text||!CID)return;
   if(editId){
+    if(!navigator.onLine){alert("You're offline — editing isn't available right now.");return;}
     await sb.from("messages").update({text,edited:true}).eq("id",editId);
     cancelEdit();await fetchMsgs(CID,CTYPE);return;
   }
   inp.value="";inp.style.height="auto";
   const tid="tmp"+Date.now();
+  if(!navigator.onLine){
+    const draft={
+      id:tid,user_id:ME.id,sender_name:PROF?.name||ME.email,text,status:'sending',
+      seen_by:[],created_at:new Date().toISOString(),
+      conversation_id:CTYPE==='dm'?CID:null,group_id:CTYPE==='grp'?CID:null
+    };
+    await queueOutbox({tid,cid:CID,type:CTYPE,ts:Date.now(),draft});
+    await fetchMsgs(CID,CTYPE);
+    return;
+  }
   const el=document.getElementById("msgs");
   if(el){
     const t=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});

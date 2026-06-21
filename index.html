@@ -164,6 +164,17 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .tag{display:inline-flex;align-items:center;gap:6px;background:var(--purple)22;color:var(--purple3);border-radius:8px;padding:4px 10px;font-size:13px;}
 .tag button{background:none;border:none;cursor:pointer;color:inherit;font-size:15px;padding:0;line-height:1;}
 
+/* TYPING + PRESENCE */
+.typing-wrap{display:flex;align-items:center;gap:8px;padding:4px 0 2px;}
+.typing-dots{display:flex;gap:4px;background:var(--bg4);padding:10px 14px;border-radius:18px;border-bottom-left-radius:4px;}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:#888;display:inline-block;animation:tdot 1.2s infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s;}
+.typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-6px);opacity:1}}
+.sdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;margin-right:2px;}
+.sdot.on{background:var(--green);}
+.sdot.off{background:#555;}
+
 /* CTX */
 .ctx{position:fixed;background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:6px;z-index:999;min-width:200px;box-shadow:0 10px 40px #000a;animation:pop .12s ease;}
 @keyframes pop{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
@@ -344,6 +355,9 @@ let msgsub=null,poll=null,tab='dm',booted=false;
 let ctxId=null,ctxTxt=null,editId=null,delId=null;
 let convos=[],groups=[],grpMems=[];
 let mrec=null,isRec=false,rchunks=[];
+// PRESENCE + TYPING STATE
+let presenceCh=null,typingTimer=null,isTyping=false,otherOnline=false,otherTyping=false;
+
 // CALL STATE
 let agoraClient=null,localAudio=null,localVideo=null;
 let isMuted=false,isCamOff=false,callType=null,incData=null;
@@ -541,6 +555,7 @@ window.doLogout=async()=>{
   booted=false;
   if(poll) clearInterval(poll);
   if(msgsub){sb.removeChannel(msgsub);msgsub=null;}
+  stopPresence();
   await endCall(true);
   await sb.auth.signOut();
 };
@@ -631,11 +646,13 @@ window.openChat=async(cid,name,type)=>{
       '<button class="hbtn" onclick="startCall(\'voice\',\''+cid+'\')" title="Voice Call">📞</button>'+
       '<button class="hbtn" onclick="startCall(\'video\',\''+cid+'\')" title="Video Call">📹</button>'+
     '</div>':'';
+  stopPresence();
+  otherOnline=false; otherTyping=false;
   document.getElementById("chatarea").innerHTML=
     '<div class="chatheader">'+
       '<button class="backbtn" onclick="goBack()">‹</button>'+
       '<div class="hav'+(g?' grp':'')+'">'+( g?'👥':name.slice(0,2).toUpperCase() )+'</div>'+
-      '<div class="hinfo"><div class="hnm">'+eh(name)+'</div>'+(g?'<div class="hsub">Group chat</div>':'')+'</div>'+
+      '<div class="hinfo"><div class="hnm">'+eh(name)+'</div><div id="hstatus" style="display:flex;align-items:center;gap:5px;margin-top:2px"><span class="sdot off"></span><span style="color:#555;font-size:12px">Offline</span></div></div>'+
       callBtns+
     '</div>'+
     '<div class="msgs" id="msgs"></div>'+
@@ -643,7 +660,7 @@ window.openChat=async(cid,name,type)=>{
       '<div class="editbar" id="ebar"><span>✏️ Editing message</span><button onclick="cancelEdit()">✕</button></div>'+
       '<div class="inprow">'+
         '<button class="voicebtn" id="vbtn" onclick="toggleRec()" title="Voice message">🎤</button>'+
-        '<textarea class="msginp" id="minp" placeholder="Message '+eh(name)+'…" rows="1" onkeydown="onK(event)" oninput="autoH(this)"></textarea>'+
+        '<textarea class="msginp" id="minp" placeholder="Message '+eh(name)+'…" rows="1" onkeydown="onK(event)" oninput="autoH(this);onTyping()"></textarea>'+
         '<button class="sendbtn" id="sbtn" onclick="sendMsg()">➤</button>'+
       '</div>'+
     '</div>';
@@ -656,9 +673,10 @@ window.openChat=async(cid,name,type)=>{
     .on('postgres_changes',{event:'*',schema:'public',table:'messages',filter},async()=>{
       await markSeen(cid,type);await fetchMsgs(cid,type);loadAll();
     }).subscribe();
+  if(type==='dm') startPresence(cid);
 };
 
-window.goBack=()=>{document.getElementById("sidebar").classList.remove("hide");CID=null;};
+window.goBack=()=>{document.getElementById("sidebar").classList.remove("hide");CID=null;stopPresence();};
 
 function startPoll(){
   if(poll) clearInterval(poll);
@@ -735,6 +753,11 @@ async function markSeen(cid,type){
 // ── SEND ──────────────────────────────────────────────────
 window.onK=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}};
 window.autoH=el=>{el.style.height="auto";el.style.height=Math.min(el.scrollHeight,130)+"px";};
+window.onTyping=()=>{
+  setTyping(true);
+  clearTimeout(typingTimer);
+  typingTimer=setTimeout(()=>setTyping(false),2500);
+};
 
 window.sendMsg=async()=>{
   const inp=document.getElementById("minp");
@@ -744,7 +767,7 @@ window.sendMsg=async()=>{
     await sb.from("messages").update({text,edited:true}).eq("id",editId);
     cancelEdit();await fetchMsgs(CID,CTYPE);return;
   }
-  inp.value="";inp.style.height="auto";
+  inp.value="";inp.style.height="auto";setTyping(false);clearTimeout(typingTimer);
   const tid="tmp"+Date.now();
   if(!navigator.onLine){
     const draft={
@@ -776,6 +799,53 @@ async function ins(extra={}){
 }
 
 // ── CALLS ─────────────────────────────────────────────────
+// ── PRESENCE + TYPING ────────────────────────────────────
+function startPresence(cid){
+  if(presenceCh){sb.removeChannel(presenceCh);presenceCh=null;}
+  presenceCh=sb.channel("presence-"+cid,{config:{presence:{key:ME.id}}});
+  presenceCh
+    .on("presence",{event:"sync"},()=>{
+      const state=presenceCh.presenceState();
+      const others=Object.keys(state).filter(k=>k!==ME.id);
+      otherOnline=others.length>0;
+      otherTyping=others.some(k=>state[k]?.[0]?.typing===true);
+      updateHeaderStatus();
+    })
+    .on("presence",{event:"join"},()=>{otherOnline=true;updateHeaderStatus();})
+    .on("presence",{event:"leave"},payload=>{
+      const state=presenceCh.presenceState();
+      const others=Object.keys(state).filter(k=>k!==ME.id);
+      otherOnline=others.length>0;
+      otherTyping=false;
+      updateHeaderStatus();
+    })
+    .subscribe(async(status)=>{
+      if(status==="SUBSCRIBED"){
+        await presenceCh.track({user_id:ME.id,name:PROF?.name||"",typing:false,online_at:new Date().toISOString()});
+      }
+    });
+}
+function stopPresence(){
+  if(presenceCh){presenceCh.untrack();sb.removeChannel(presenceCh);presenceCh=null;}
+  isTyping=false;
+}
+async function setTyping(val){
+  if(!presenceCh||isTyping===val)return;
+  isTyping=val;
+  await presenceCh.track({user_id:ME.id,name:PROF?.name||"",typing:val,online_at:new Date().toISOString()});
+}
+function updateHeaderStatus(){
+  const el=document.getElementById("hstatus");
+  if(!el)return;
+  if(otherTyping){
+    el.innerHTML='<span class="sdot on"></span><span style="color:var(--purple3);font-size:12px;font-style:italic">typing...</span>';
+  }else if(otherOnline){
+    el.innerHTML='<span class="sdot on"></span><span style="color:var(--green);font-size:12px">Online</span>';
+  }else{
+    el.innerHTML='<span class="sdot off"></span><span style="color:#555;font-size:12px">Offline</span>';
+  }
+}
+
 function listenCalls(){
   sb.channel('call-in-'+ME.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{

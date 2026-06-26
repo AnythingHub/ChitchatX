@@ -552,12 +552,19 @@ window.doAuth=async()=>{
   }
 };
 
+// Detect if running inside Android WebView app
+const isApp=()=>typeof window.AndroidBridge!=='undefined';
+// Intermediate HTTPS page — JS navigation to custom scheme works; HTTP redirect doesn't
+const OAUTH_CB='https://anythinghub.github.io/ChitchatX/auth-callback.html';
+
 window.signInFB=async()=>{
-  const {error}=await sb.auth.signInWithOAuth({provider:'facebook',options:{redirectTo:APPURL}});
+  const redirect=isApp()?OAUTH_CB:APPURL;
+  const {error}=await sb.auth.signInWithOAuth({provider:'facebook',options:{redirectTo:redirect}});
   if(error) alert(error.message);
 };
 window.signInGoogle=async()=>{
-  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:APPURL,queryParams:{access_type:'offline',prompt:'consent'}}});
+  const redirect=isApp()?OAUTH_CB:APPURL;
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:redirect,queryParams:{access_type:'offline',prompt:'consent'}}});
   if(error) alert(error.message);
 };
 

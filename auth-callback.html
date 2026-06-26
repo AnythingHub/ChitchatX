@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChitchatX — Signing in</title>
+  <style>
+    body{background:#0d0d0d;color:#fff;font-family:sans-serif;
+         display:flex;align-items:center;justify-content:center;
+         min-height:100vh;flex-direction:column;gap:1rem;margin:0;}
+    .spinner{width:40px;height:40px;border:3px solid #333;
+             border-top-color:#7c3aed;border-radius:50%;
+             animation:spin 1s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    a{color:#a78bfa;font-size:14px;}
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <p>Completing sign in…</p>
+  <p id="fallback" style="display:none">
+    <a id="openApp" href="#">Tap here to return to ChitchatX</a>
+  </p>
+  <script>
+    // Preserve all tokens — Supabase uses #fragment (implicit) or ?code (PKCE)
+    const hash   = window.location.hash;
+    const search = window.location.search;
+    const deepLink = 'chitchatx://auth' + (hash || search || '');
+
+    // JavaScript navigation to custom scheme works in Chrome; HTTP redirect doesn't
+    window.location.href = deepLink;
+
+    // Show manual tap fallback after 3 seconds in case dialog was dismissed
+    setTimeout(() => {
+      document.getElementById('openApp').href = deepLink;
+      document.getElementById('fallback').style.display = 'block';
+    }, 3000);
+  </script>
+</body>
+</html>
